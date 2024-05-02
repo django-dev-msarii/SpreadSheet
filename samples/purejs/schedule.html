@@ -49,25 +49,28 @@ function addGos() {
 
     let countBefore = ul.childElementCount;
 
-    // Clone the existing <li> element
     let existingLi = ul.querySelector("li");
     let newLi = existingLi.cloneNode(true);
-    // Increment button count
     let buttonCount = countBefore + 1;
-    // Append the cloned <li> to the <ul>
     ul.appendChild(newLi);
 
     let newSubmitButton = newLi.querySelector("#submit_gos-1");
     newSubmitButton.dataset.buttonNumber = buttonCount;
     newSubmitButton.id = 'submit_gos'+'-'+buttonCount;
 
-    let newnoOfRowsInput = newLi.querySelector("#noOfRowsInput-1");
-    newnoOfRowsInput.id = 'noOfRowsInput'+'-'+buttonCount;
+    // let newnoOfRowsInput = newLi.querySelector("#noOfRowsInput-1");
+    // newnoOfRowsInput.id = 'noOfRowsInput'+'-'+buttonCount;
 
+
+    // let timeOfGoInput = newLi.querySelector("#timeOfGoInput-1");
+    // timeOfGoInput.id = 'timeOfGoInput'+'-'+buttonCount;
+    let newnoOfRowsInput = newLi.querySelector("#noOfRowsInput-1");
+    newnoOfRowsInput.id = 'noOfRowsInput' + '-' + buttonCount;
+    newnoOfRowsInput.value = ''; 
 
     let timeOfGoInput = newLi.querySelector("#timeOfGoInput-1");
-    timeOfGoInput.id = 'timeOfGoInput'+'-'+buttonCount;
-    
+    timeOfGoInput.id = 'timeOfGoInput' + '-' + buttonCount;
+    timeOfGoInput.value = ''; 
 
     let countAfter = ul.childElementCount;
 
@@ -80,47 +83,98 @@ function addGos() {
 
 }
 let data={Rows:6,time:'10:00'}
+let rowDataArray = [];
+const inputRows = {};
+let rowsValue;
+let timevalue;
+let noofrow;
 let u=document.getElementById("gos-list");
+
+
 document.getElementById("gos-list").addEventListener("click",function(event){
     var li=document.getElementById("gos-list").getElementsByTagName('li')
- 
+   
             u.addEventListener('input',function(e){
-                var noofrow=document.getElementById(e.target.id)
-                console.log("input: ",noofrow.value)
+            noofrow=document.getElementById(e.target.id)
+
                 var s= e.target.id.split('-')
+                let rowId=s[1];
+                 matchingRows = rowDataArray.filter(item => item.rowId === rowId);
+    if (matchingRows.length > 0) {
+         rowsValue = matchingRows[0].Rows; 
+         timevalue =  matchingRows[0].time;
+    }
+       
+                let target = event.target;
+
                 if(s[0] === 'noOfRowsInput')
                 {
                     data.Rows=noofrow.value
                     data.event=e.target.id
+                }else if(s[0] !== 'noOfRowsInput' && matchingRows.length > 0){
+                    data.Rows=rowsValue;
+                    data.event=e.target.id
                 }
+
                 if(s[0] === 'timeOfGoInput')
                 {
                     data.time=noofrow.value
+                }else if(s[0] !== 'timeOfGoInput' && matchingRows.length > 0){
+                    data.time=timevalue;
                 }
-
+              
+              
             })
 });
 u.addEventListener('click',function(e){
-    if(e.target.type === 'submit')
+    if(e.target.type == 'submit')
     {
+      
         var s=e.target.id.split('-')
         var s1=s[1]
+        const rowId=s[1]
         if(s1>=2)
         {
-            s1=s1*9
+            s1=s1*data.Rows
         }
        else
        {
         s1=s1*2
        }
+       let existingIndex = rowDataArray.findIndex(item => item.rowId === rowId);
+        if (existingIndex !== -1) {
+            rowDataArray[existingIndex] = { rowId: rowId, Rows: data.Rows, time: data.time, s1: s1 };
+        } else {
+            rowDataArray.push({ rowId: rowId, Rows: data.Rows, time: data.time, s1: s1 });
+        }
+        
+    
+        onedayStructure(data.Rows,data.time,s1,rowId,rowsValue);
+        if (noofrow && typeof noofrow.value !== 'undefined') {
+        // noofrow.value = '';
+        data.Rows='';
+        data.time='';
+        }
+       
 
-        onedayStructure(data.Rows,data.time,s1)
     }
 })
 
+function findRowIndex(sheet, rowId) {
+    let rowCount = sheet.getRowCount();
+    let columnIndex = 0;
+
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+        let cellValue = sheet.getValue(rowIndex, columnIndex);
+        if (cellValue === rowId) {
+            return rowIndex; 
+          }
+    }
+
+    return -1; 
+}
 
 
-// Clone the existing <li> element
     let person, sheet ,spread ;
     window.onload = function () {   
     let config = GC.Spread.Sheets.Designer.DefaultConfig;
@@ -156,9 +210,7 @@ u.addEventListener('click',function(e){
     spread = designer.getWorkbook()
     sheet = spread.getActiveSheet();
     sheet.setColumnCount(100);
-    // onedayStructure();
-    // get_div = document.querySelector("")
-    // Get the input elements
+    
     initSpread(spread);
     
 }
@@ -181,7 +233,6 @@ function getCellTag(sheet, row, col) {
     try {
         return JSON.parse(jsonString);
     } catch (e) {
-        // Handle the case where jsonString is not valid JSON
         return {};
     }
 }
@@ -190,7 +241,7 @@ function applyStylesWithTag() {
     let spreadNS = GC.Spread.Sheets;
     sheet = spread.getActiveSheet();
     let mainHeaderColor = new spreadNS.Style();
-    mainHeaderColor.backColor = "lightblue"; // Assigning the background color for main header cells
+    mainHeaderColor.backColor = "lightblue"; 
 
     let rowCount = sheet.getRowCount(),
         colCount = sheet.getColumnCount();
@@ -198,7 +249,6 @@ function applyStylesWithTag() {
     for (let i = 0; i < rowCount; i++) {
         for (let j = 0; j < colCount; j++) {
             let cellTagObject = getCellTag(sheet, i, j);
-            // Check if 'main_header' key exists and if its value is true
             if (cellTagObject.hasOwnProperty('main_header') && cellTagObject.main_header === true) {
                 sheet.setStyle(i, j, mainHeaderColor, spreadNS.SheetArea.viewport);
             }
@@ -214,7 +264,7 @@ function findColumnIndex(sheet, headerText) {
             return i;
         }
     }
-    return -1; // Return -1 if the header is not found
+    return -1; 
 }
 
 function addUsers() {
@@ -225,7 +275,7 @@ function addUsers() {
     if (usersColumnIndex !== -1) {
         let rowCount = usersData.length;
         for (let i = 0; i < rowCount; i++) {
-            sheet.setValue(i + 2, usersColumnIndex, usersData[i]); // Assuming user data starts from the second row
+            sheet.setValue(i + 2, usersColumnIndex, usersData[i]); 
         }
     } else {
         console.log("Columns 'Users' not found.");
@@ -235,12 +285,21 @@ function addUsers() {
 
 
 
-function onedayStructure(total_rows,gos_time ,tot) {
+function onedayStructure(total_rows,gos_time ,tot,rowId,rowsValue) {
+   
+    let rowCount = sheet.getRowCount();
+     let deleted;
+     if(rowsValue !== undefined && rowsValue > total_rows){
+        deleted = rowsValue - total_rows;
+
+        deleteRows(total_rows, deleted);
+        
+     }
     let colCount = 9 
     let spreadNS = GC.Spread.Sheets;
     sheet = spread.getActiveSheet();
     let today = new Date();
-
+    sheet.setValue(tot, 0, rowId);
     sheet.setValue(0, 0, today.toDateString());
     sheet.setValue(tot, 0, "Course");
     sheet.setValue(tot, 1, "FCP");
@@ -276,25 +335,33 @@ function onedayStructure(total_rows,gos_time ,tot) {
     classes = ['ADR6', 'ADR2', 'ADR-3']
     Statuses = ['MND', 'FND', 'SND']
 
-    
+    let rowIndex = findRowIndex(sheet, rowId);
+     if (rowIndex !== -1) {
+        let prevData = getRowData(sheet, rowIndex);
+
+
+        console.log("Previous Data:", prevData);
+    } else {
+        console.log("Row with ID " + rowId + " not found.");
+    }
 
     let total_columns = 9;
-    for (let row = 0; total_rows >= row; row++) {
-        for (let col = 0; total_columns >= col; col++) {
+    for (let row = 0; total_rows > row; row++) {
+        for (let col = 0; total_columns > col; col++) {
             let cellTagObject = getCellTag(sheet, row, col);
             if (cellTagObject.hasOwnProperty('is_fcp') && cellTagObject.is_fcp === true) {
-                for(let add_tag = 0; total_rows >= add_tag; add_tag++) {
+                for(let add_tag = 0; total_rows > add_tag; add_tag++) {
                     setCellTag(sheet, row + 2 + add_tag, col, { fcp_cell: true, day_is: today.toDateString(), go : 1 });
                 }
             }
             if (cellTagObject.hasOwnProperty('is_to') && cellTagObject.is_to === true) {
-                for(let add_tag = 0; total_rows >= add_tag; add_tag++) {
+                for(let add_tag = 0; total_rows > add_tag; add_tag++) {
                     sheet.setValue(row + tot + add_tag, col, gos_time);
                     setCellTag(sheet, row + 2 + add_tag, col, { to_cell: true, day_is: today.toDateString(), go : 1 });
                 }
             }
             if(cellTagObject.hasOwnProperty('is_class') && cellTagObject.is_class === true){
-                for(let add_tag = 0; total_rows >= add_tag; add_tag++) {
+                for(let add_tag = 0; total_rows > add_tag; add_tag++) {
                     setCellTag(sheet, row + tot + add_tag, col, { class_cell: true, day_is: today.toDateString(),go : 1 });
                     let classDropdown = new spreadNS.CellTypes.ComboBox();
                     classDropdown.items([...classes]);
@@ -303,34 +370,30 @@ function onedayStructure(total_rows,gos_time ,tot) {
             }
         }
     }
-    addUsers(); // Add users
-    applyStylesWithTag(); // Apply styles
+  
+    addUsers();
+    applyStylesWithTag(); 
 }
 
 
-
-
-// function checkCellTag() {
-//     let rowCount = sheet.getRowCount(),
-//         colCount = sheet.getColumnCount();
-//     for (let i = 0; i < rowCount; i++) {
-//         for (let j = 0; j < colCount; j++) {
-//             let cellTagObject = getCellTag(sheet, i, j);
-//             if (cellTagObject && Object.keys(cellTagObject).length > 0) {
-//                 console.log(i,j,cellTagObject);
-//             }
-//         }
-//     }
-// }
+function deleteRows(rowId, rowCountToDelete) {
+    let rowIndexToDelete = rowDataArray.findIndex(item => item.Rows === rowId);
+    if (rowIndexToDelete !== -1) {
+        let startRow = parseInt(rowDataArray[rowIndexToDelete].s1) + 2; 
+        sheet.deleteRows(startRow, rowCountToDelete);
+        rowDataArray[rowIndexToDelete].Rows -= rowCountToDelete;
+        console.log("Deleted " + rowCountToDelete + " rows for Go " + rowId);
+    } else {
+        console.log("Row with ID " + rowId + " not found in rowDataArray.");
+    }
+}
 
 function initSpread(spread) {
     spread.bind(GC.Spread.Sheets.Events.ClipboardPasted, function (sender, args) {
     console.log("ClipboardPasted", args);
 });
 
-    //This example stops the active sheet from changing.
 spread.bind(GC.Spread.Sheets.Events.ActiveSheetChanging, function (sender, args) {
-//Cancel sheet switching.
 console.log("sender",sender , "ar",args)
 args.cancel = true;
 });
